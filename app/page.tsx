@@ -451,7 +451,7 @@ export default function LandingPage() {
                     "AI는 도구가 아니라 파트너입니다" <span className="animate-bounce inline-block">🤝</span>
                   </p>
                   <a
-                    href="https://www.linkedin.com/in/kilho-kim/"
+                    href="https://litt.ly/kghcoach"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-700 transition-colors animate-pulse hover:scale-110 transform duration-200"
