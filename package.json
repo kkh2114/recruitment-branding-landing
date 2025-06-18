@@ -1,0 +1,54 @@
+{
+  "name": "ai-recruitment-branding-landing",
+  "version": "2.0.0",
+  "description": "AI 채용 브랜딩 강의 랜딩페이지 - 인재가 먼저 찾아오는 회사 만들기",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^15.0.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^2.5.0",
+    "lucide-react": "^0.445.0",
+    "googleapis": "^144.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^15.0.0"
+  },
+  "keywords": [
+    "AI",
+    "채용",
+    "브랜딩",
+    "Next.js",
+    "TypeScript",
+    "Tailwind CSS",
+    "Google Sheets",
+    "Netlify"
+  ],
+  "author": "김길호 (에스유디자인)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kkh2114/recruitment-branding-landing"
+  },
+  "engines": {
+    "node": ">=18.17.0",
+    "npm": ">=9.0.0"
+  }
+} 
