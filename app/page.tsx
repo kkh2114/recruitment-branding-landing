@@ -43,12 +43,12 @@ export default function HomePage() {
           <div className="flex flex-wrap justify-center gap-6 mb-12">
                          <Badge variant="secondary" className="text-xl px-6 py-4 bg-gradient-to-r from-red-500 to-pink-500 text-white border-0 shadow-2xl animate-bounce">
                <Flame className="h-6 w-6 mr-3" />
-               🔥 2025년 1월 초특급 런칭! 🔥
+               🔥 2025년 7월 15일 D-DAY! 🔥
              </Badge>
-            <Badge variant="secondary" className="text-xl px-6 py-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white border-0 shadow-2xl animate-pulse">
-              <Zap className="h-6 w-6 mr-3" />
-              ⚡ 2시간 농축 고밀도 강의! ⚡
-            </Badge>
+                         <Badge variant="secondary" className="text-xl px-6 py-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white border-0 shadow-2xl animate-pulse">
+               <Zap className="h-6 w-6 mr-3" />
+               ⚡ 오후 2시~4시 (2시간 집중!) ⚡
+             </Badge>
             <Badge variant="secondary" className="text-xl px-6 py-4 bg-gradient-to-r from-green-500 to-teal-500 text-white border-0 shadow-2xl animate-bounce">
               <Trophy className="h-6 w-6 mr-3" />
               👑 대표/인사 담당자 VIP 전용! 👑
@@ -305,8 +305,8 @@ export default function HomePage() {
             <Card className="p-8 bg-white/10 backdrop-blur-sm border-2 border-white/30 hover:bg-white/20 transition-all duration-300 animate-pulse">
               <CardContent className="text-center">
                 <div className="text-6xl mb-4 animate-spin">⏱️</div>
-                <h3 className="text-2xl font-black mb-2">🚨 선착순 50명 한정! 🚨</h3>
-                <p className="text-lg font-bold">💀 늦으면 1년 후에나 다시!</p>
+                                 <h3 className="text-2xl font-black mb-2">🚨 선착순 50명 한정! 🚨</h3>
+                 <p className="text-lg font-bold">💀 7월 15일까지 단 며칠 남지 않았어요!</p>
               </CardContent>
             </Card>
             
