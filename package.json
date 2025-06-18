@@ -8,12 +8,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "postinstall": "npm ls --depth=0 || true"
   },
   "dependencies": {
     "next": "^15.0.0",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "typescript": "^5.6.0",
     "@types/node": "^22.0.0",
     "@types/react": "^18.3.0",
