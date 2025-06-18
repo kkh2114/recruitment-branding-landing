@@ -17,13 +17,6 @@ const nextConfig = {
   // 📦 서버 외부 패키지
   serverExternalPackages: ['googleapis'],
   
-
-  
-  // ⚡ 성능 최적화
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production', // 프로덕션에서 console.log 제거
-  },
-  
   // 🔒 보안 헤더
   async headers() {
     return [

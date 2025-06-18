@@ -1,0 +1,41 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "18.17.0"
+  NPM_FLAGS = "--legacy-peer-deps"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Next.js 15 지원을 위한 플러그인
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# API Routes를 위한 함수 설정
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["node_modules/**"]
+
+# 환경 변수 설정
+[context.production.environment]
+  NODE_ENV = "production"
+
+# 리다이렉트 설정
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/__nextjs_api_router"
+  status = 200
+
+# 헤더 설정
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate" 
