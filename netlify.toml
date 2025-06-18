@@ -3,7 +3,8 @@
 
 [build]
   # 빌드 명령어
-  command = "npm run build"
+  command = "npm install && npm run build"
+  publish = "out"
   # Node.js 버전 설정
   environment = { NODE_VERSION = "18.17.0" }
 
@@ -50,5 +51,11 @@
 
 # 🔄 자동 배포 설정
 [build.environment]
-  # Next.js 기능 활성화
-  NEXT_TELEMETRY_DISABLED = "1" 
+  NODE_VERSION = "18.17.0"
+  NPM_FLAGS = "--legacy-peer-deps"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200 
