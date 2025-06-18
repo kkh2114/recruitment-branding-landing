@@ -5,7 +5,7 @@ import type React from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Heart, BookOpen, Target, ArrowRight } from "lucide-react"
+import { CheckCircle, Heart, BookOpen, Target, ArrowRight, ExternalLink } from "lucide-react"
 import { useEffect, useState } from "react"
 import ApplicationForm from "@/components/application-form"
 
@@ -107,6 +107,143 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Problem Section */}
+      <section className="py-16 bg-white relative z-10">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-800 animate-fade-in-up">
+              <span className="animate-bounce inline-block">😩</span> 당신의 문제는 무엇인가요?{" "}
+              <span className="animate-bounce inline-block animation-delay-500">🤔</span>
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <Card className="border-red-200 bg-red-50 hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-fade-in-left">
+              <CardContent className="p-6 text-center">
+                <div className="text-4xl mb-4 animate-wiggle">🤔</div>
+                <p className="text-gray-700 font-medium">"우리 회사는 괜찮은데, 왜 사람이 안 올까요?"</p>
+              </CardContent>
+            </Card>
+            <Card className="border-orange-200 bg-orange-50 hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-fade-in-up animation-delay-200">
+              <CardContent className="p-6 text-center">
+                <div className="text-4xl mb-4 animate-wiggle animation-delay-300">📝</div>
+                <p className="text-gray-700 font-medium">"채용공고에 성의는 있는데, 효과는 왜 없죠?"</p>
+              </CardContent>
+            </Card>
+            <Card className="border-blue-200 bg-blue-50 hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-fade-in-right animation-delay-400">
+              <CardContent className="p-6 text-center">
+                <div className="text-4xl mb-4 animate-wiggle animation-delay-600">🏢</div>
+                <p className="text-gray-700 font-medium">"이제는 사람도 브랜드를 보고 고릅니다."</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Solution Section */}
+      <section className="py-16 bg-gradient-to-r from-green-50 via-blue-50 to-purple-50 relative z-10">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-gray-800 animate-fade-in-up">
+                <span className="animate-spin-slow inline-block">🤖</span> 하지만 AI가 있다면?
+                <span className="text-green-600 animate-glow">완전히 다른 이야기!</span>{" "}
+                <span className="animate-bounce inline-block">✨</span>
+              </h2>
+              <p className="text-xl text-gray-600 mb-8 animate-fade-in-up animation-delay-200">
+                복잡하고 어려웠던 채용공고 작성이 <strong className="text-blue-600 animate-pulse">클릭 몇 번</strong>
+                으로 해결됩니다 <span className="animate-bounce inline-block">🎯</span>
+              </p>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-12 items-center mb-12">
+              <div className="space-y-6 animate-fade-in-left">
+                <Card className="border-red-200 bg-red-50 p-6 hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                  <div className="flex items-center space-x-4">
+                    <div className="text-3xl animate-wiggle">😰</div>
+                    <div>
+                      <h3 className="font-bold text-lg text-red-800 mb-2">
+                        기존 방식 <span className="animate-bounce inline-block">😵‍💫</span>
+                      </h3>
+                      <ul className="text-gray-700 space-y-1">
+                        <li>• 어떻게 써야 할지 막막함 😵</li>
+                        <li>• 몇 시간씩 고민해도 뻔한 내용 😴</li>
+                        <li>• 전문적이지 못한 결과물 😞</li>
+                        <li>• 지원자들의 무관심 😒</li>
+                      </ul>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              <div className="space-y-6 animate-fade-in-right">
+                <Card className="border-green-200 bg-green-50 p-6 hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                  <div className="flex items-center space-x-4">
+                    <div className="text-3xl animate-bounce">🚀</div>
+                    <div>
+                      <h3 className="font-bold text-lg text-green-800 mb-2">
+                        AI 활용 방식 <span className="animate-spin-slow inline-block">⚡</span>
+                      </h3>
+                      <ul className="text-gray-700 space-y-1">
+                        <li>• 프롬프트 입력 → 즉시 완성 🎯</li>
+                        <li>• 10분이면 전문가급 공고 완성 ⏰</li>
+                        <li>• 브랜딩까지 자동으로 적용 ✨</li>
+                        <li>• 지원자들이 먼저 관심 표현 💕</li>
+                      </ul>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 rounded-2xl text-center animate-gradient-x hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
+              <h3 className="text-2xl md:text-3xl font-bold mb-4 animate-fade-in-up">
+                <span className="animate-bounce inline-block">💡</span> 이제는{" "}
+                <span className="text-yellow-300 animate-glow">"어떻게 쓸까?"</span> 고민 대신
+              </h3>
+              <p className="text-xl md:text-2xl font-semibold animate-fade-in-up animation-delay-200">
+                <span className="text-yellow-300 animate-glow">"어떤 인재를 원할까?"</span>에만 집중하세요!{" "}
+                <span className="animate-spin-slow inline-block">🎯</span>
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-4">
+                <Badge className="bg-yellow-400 text-yellow-900 text-lg px-4 py-2 animate-pulse hover:animate-bounce">
+                  ⚡ 10분 완성
+                </Badge>
+                <Badge className="bg-green-400 text-green-900 text-lg px-4 py-2 animate-pulse hover:animate-bounce animation-delay-200">
+                  🎯 전문가급 퀄리티
+                </Badge>
+                <Badge className="bg-pink-400 text-pink-900 text-lg px-4 py-2 animate-pulse hover:animate-bounce animation-delay-400">
+                  💝 브랜딩까지 자동
+                </Badge>
+              </div>
+            </div>
+
+            <div className="mt-12 grid md:grid-cols-3 gap-8">
+              <Card className="text-center p-6 border-blue-200 bg-blue-50 hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-fade-in-up">
+                <div className="text-4xl mb-4 animate-bounce">📝</div>
+                <h4 className="font-bold text-lg mb-3 text-blue-800">
+                  Step 1: 간단 입력 <span className="animate-wiggle inline-block">✍️</span>
+                </h4>
+                <p className="text-gray-700">회사 정보와 원하는 인재상만 입력하면 끝</p>
+              </Card>
+              <Card className="text-center p-6 border-purple-200 bg-purple-50 hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-fade-in-up animation-delay-200">
+                <div className="text-4xl mb-4 animate-spin-slow">🤖</div>
+                <h4 className="font-bold text-lg mb-3 text-purple-800">
+                  Step 2: AI 마법 <span className="animate-bounce inline-block">✨</span>
+                </h4>
+                <p className="text-gray-700">AI가 매력적인 채용공고를 자동 생성</p>
+              </Card>
+              <Card className="text-center p-6 border-green-200 bg-green-50 hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-fade-in-up animation-delay-400">
+                <div className="text-4xl mb-4 animate-pulse">✨</div>
+                <h4 className="font-bold text-lg mb-3 text-green-800">
+                  Step 3: 즉시 완성 <span className="animate-bounce inline-block">🎉</span>
+                </h4>
+                <p className="text-gray-700">지원자가 몰려드는 브랜딩 채용공고 완성!</p>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Course Info Section */}
       <section className="py-12 bg-gradient-to-r from-yellow-50 via-orange-50 to-pink-50 relative z-10">
         <div className="container mx-auto px-4">
@@ -172,6 +309,157 @@ export default function LandingPage() {
               <div className="inline-block bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg animate-pulse hover:animate-bounce transform hover:scale-105 transition-all duration-300">
                 <span className="animate-spin-slow inline-block">🔔</span> 신청하시면 상세 일정 안내드립니다!{" "}
                 <span className="animate-bounce inline-block">📨</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Guide Section */}
+      <section className="py-16 bg-gradient-to-r from-indigo-50 via-pink-50 to-yellow-50 relative z-10">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-800 animate-fade-in-up">
+                <span className="animate-bounce inline-block">🎯</span> 이런 분께 꼭 필요해요!{" "}
+                <span className="animate-wiggle inline-block">✨</span>
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 mb-12">
+              <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200 hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-fade-in-left">
+                <div className="text-center">
+                  <div className="text-5xl mb-4 animate-bounce">👔</div>
+                  <h3 className="text-xl font-bold mb-3 text-blue-800">
+                    경영진 & 팀장님 <span className="animate-wiggle inline-block">💼</span>
+                  </h3>
+                  <ul className="text-gray-700 space-y-2">
+                    <li>• "좋은 사람 뽑기가 이렇게 어려웠나?" 😅</li>
+                    <li>• "우리 회사도 매력적으로 어필하고 싶어" ✨</li>
+                    <li>• "채용 브랜딩이 뭔지는 알겠는데..." 🤔</li>
+                  </ul>
+                </div>
+              </Card>
+
+              <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-100 border-green-200 hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-fade-in-right">
+                <div className="text-center">
+                  <div className="text-5xl mb-4 animate-bounce animation-delay-200">👩‍💼</div>
+                  <h3 className="text-xl font-bold mb-3 text-green-800">
+                    인사/채용담당자 <span className="animate-wiggle inline-block">📋</span>
+                  </h3>
+                  <ul className="text-gray-700 space-y-2">
+                    <li>• "채용공고 쓰는데 매번 고민이 많아" 😰</li>
+                    <li>• "AI 활용법을 제대로 배우고 싶어" 🤖</li>
+                    <li>• "더 매력적인 공고로 좋은 인재 유치하자!" 💪</li>
+                  </ul>
+                </div>
+              </Card>
+            </div>
+
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-8 rounded-2xl text-center animate-gradient-x hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
+              <h3 className="text-2xl md:text-3xl font-bold mb-4 animate-fade-in-up">
+                <span className="animate-bounce inline-block">🎁</span> 특별 혜택이 기다려요!
+              </h3>
+              <div className="grid md:grid-cols-2 gap-6 mt-6">
+                <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl animate-fade-in-left">
+                  <div className="text-2xl mb-2 animate-pulse">📧</div>
+                  <h4 className="font-semibold mb-2">실전 템플릿 제공</h4>
+                  <p className="text-sm opacity-90">바로 사용 가능한 프롬프트 모음집</p>
+                </div>
+                <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl animate-fade-in-right">
+                  <div className="text-2xl mb-2 animate-pulse animation-delay-200">💬</div>
+                  <h4 className="font-semibold mb-2">1:1 질의응답</h4>
+                  <p className="text-sm opacity-90">궁금한 점은 바로바로 해결</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Kim Gil-ho Section */}
+      <section className="py-16 bg-white relative z-10">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-800 animate-fade-in-up">
+                <span className="animate-bounce inline-block">🤔</span> 왜 김길호 대표일까요?{" "}
+                <span className="animate-wiggle inline-block">💡</span>
+              </h2>
+              <p className="text-xl text-gray-600 animate-fade-in-up animation-delay-200">
+                AI와 채용의 만남, 그 현실적인 노하우를 전해드립니다 <span className="animate-bounce inline-block">✨</span>
+              </p>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div className="space-y-6 animate-fade-in-left">
+                <Card className="p-6 border-blue-200 bg-blue-50 hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="text-3xl animate-bounce">🏢</div>
+                    <h3 className="text-xl font-bold text-blue-800">
+                      현직 인사 전문가 <span className="animate-wiggle inline-block">👔</span>
+                    </h3>
+                  </div>
+                  <p className="text-gray-700">
+                    수많은 기업의 인사담당자들과 함께 일하며 <strong>현실적인 문제점</strong>과{" "}
+                    <strong>해결책</strong>을 누구보다 잘 알고 있습니다.
+                  </p>
+                </Card>
+
+                <Card className="p-6 border-green-200 bg-green-50 hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="text-3xl animate-bounce animation-delay-200">🤖</div>
+                    <h3 className="text-xl font-bold text-green-800">
+                      AI 실무 활용 전문가 <span className="animate-spin-slow inline-block">⚡</span>
+                    </h3>
+                  </div>
+                  <p className="text-gray-700">
+                    이론이 아닌 <strong>실전에서 검증된</strong> AI 활용법만을 엄선해서 전달합니다. 바로 내일부터
+                    써먹을 수 있어요!
+                  </p>
+                </Card>
+
+                <Card className="p-6 border-purple-200 bg-purple-50 hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="text-3xl animate-bounce animation-delay-400">💝</div>
+                    <h3 className="text-xl font-bold text-purple-800">
+                      소통의 달인 <span className="animate-wiggle inline-block">🗣️</span>
+                    </h3>
+                  </div>
+                  <p className="text-gray-700">
+                    어려운 AI 기술을 <strong>쉽고 재미있게</strong> 설명하는 것이 특기. 누구나 이해할 수 있도록
+                    친근하게 알려드려요.
+                  </p>
+                </Card>
+              </div>
+
+              <div className="text-center animate-fade-in-right">
+                <div className="relative">
+                  <div className="w-64 h-64 mx-auto bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 rounded-full p-1 animate-gradient-x hover:scale-110 transition-all duration-300">
+                    <div className="w-full h-full bg-white rounded-full flex items-center justify-center text-6xl animate-bounce">
+                      👨‍💼
+                    </div>
+                  </div>
+                  <div className="absolute -top-4 -right-4 text-3xl animate-spin-slow">✨</div>
+                  <div className="absolute -bottom-4 -left-4 text-3xl animate-bounce">🚀</div>
+                </div>
+                <div className="mt-8">
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2 animate-fade-in-up">
+                    김길호 대표 <span className="animate-wiggle inline-block">👋</span>
+                  </h3>
+                  <p className="text-gray-600 mb-4 animate-fade-in-up animation-delay-200">
+                    "AI는 도구가 아니라 파트너입니다" <span className="animate-bounce inline-block">🤝</span>
+                  </p>
+                  <a
+                    href="https://www.linkedin.com/in/kilho-kim/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-700 transition-colors animate-pulse hover:scale-110 transform duration-200"
+                  >
+                    <ExternalLink size={18} />
+                    프로필 자세히 보기 <span className="animate-bounce inline-block">👀</span>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
