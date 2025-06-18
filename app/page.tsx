@@ -397,12 +397,11 @@ export default function LandingPage() {
                   <div className="flex items-center space-x-3 mb-4">
                     <div className="text-3xl animate-bounce">🏢</div>
                     <h3 className="text-xl font-bold text-blue-800">
-                      현직 인사 전문가 <span className="animate-wiggle inline-block">👔</span>
+                      23년차 중소기업 경영자 <span className="animate-wiggle inline-block">👔</span>
                     </h3>
                   </div>
                   <p className="text-gray-700">
-                    수많은 기업의 인사담당자들과 함께 일하며 <strong>현실적인 문제점</strong>과{" "}
-                    <strong>해결책</strong>을 누구보다 잘 알고 있습니다.
+                    직접 경영현장에서 <strong>'동변상련'</strong>으로 겪고 있는 당사자입니다.
                   </p>
                 </Card>
 
