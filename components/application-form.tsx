@@ -45,9 +45,11 @@ export default function ApplicationForm({ onClose }: ApplicationFormProps) {
         }, 2000)
       } else {
         const error = await response.json()
-        alert(error.message || '신청 중 오류가 발생했습니다.')
+        console.error('API Error:', error)
+        alert(`오류: ${error.message || '신청 중 오류가 발생했습니다.'}\n상태코드: ${response.status}`)
       }
     } catch (error) {
+      console.error('Network Error:', error)
       alert('네트워크 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
       setIsSubmitting(false)
