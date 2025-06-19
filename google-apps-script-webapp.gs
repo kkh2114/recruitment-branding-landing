@@ -6,596 +6,331 @@
  * 웹폼에서 직접 이 웹 앱을 호출하여 데이터 저장 + AI 자동화 실행
  */
 
-// ================================
-// 설정 및 전역 변수
-// ================================
+const CACHE = CacheService.getScriptCache();
 
 const CONFIG = {
-  // Gemini AI API 설정
-  GEMINI_API_KEY: 'AIzaSyAQ-Rgzs2qaJ8gFfLCRFjDhKowjCYhhWiQ', // 실제 API 키
-  GEMINI_MODEL: 'gemini-1.5-flash',
-  GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
-  
-  // 시트 설정
-  SHEET_ID: '1M0ZzjdY7kvYXZfWhyyOANTHsa6HIBcvJ2g71CgjIkDk', // Google Sheets ID
-  
-  // 시트 컬럼 매핑 (0-based index)
+  GEMINI_API_KEY: 'AIzaSyAQ-Rgzs2qaJ8gFfLCRFjDhKowjCYhhWiQ',
+  SHEET_ID: '1M0ZzjdY7kvYXZfWhyyOANTHsa6HIBcvJ2g71CgjIkDk',
+  SENDER_EMAIL: 'sudesigmgo@gmail.com',
+  SENDER_NAME: '에스유디자인(주) 대표 김길호 드림',
+  API_TIMEOUT: 10000,
+  RETRY_COUNT: 3,
+  BATCH_DELAY: 2000,
   COLUMNS: {
-    TIMESTAMP: 0,     // A열: 타임스탬프
-    NAME: 1,          // B열: 이름
-    EMAIL: 2,         // C열: 이메일
-    PHONE: 3,         // D열: 전화번호
-    COMPANY: 4,       // E열: 회사명
-    POSITION: 5,      // F열: 직책
-    CONCERN: 6,       // G열: 관심사
-    INDUSTRY: 7,      // H열: 업종
-    MEMO: 8,          // I열: 메모
-    AI_MESSAGE: 9,    // J열: AI 메시지
-    STATUS: 10,       // K열: 처리 상태
-    REVIEW_CHECKBOX: 11, // L열: 검토 완료 체크박스
-    EMAIL_SENT: 12    // M열: 이메일 발송 여부
-  },
-  
-  // 상태 값
-  STATUS_VALUES: {
-    NEW: '신규',
-    AI_GENERATED: 'AI 메시지 생성됨',
-    REVIEWED: '검토 완료',
-    EMAIL_SENT: '이메일 발송됨',
-    ERROR: '오류'
+    TIMESTAMP: 1, NAME: 2, EMAIL: 3, PHONE: 4,
+    COMPANY: 5, POSITION: 6, CONCERN: 7, INDUSTRY: 8,
+    MEMO: 9, STATUS: 10, AI_MESSAGE: 11, REVIEWED: 12,
+    SENT_STATUS: 13
   }
 };
 
-// ================================
-// 웹 앱 진입점
-// ================================
-
-/**
- * 웹 앱 POST 요청 처리 (웹폼에서 호출)
- */
-function doPost(e) {
-  try {
-    console.log('웹 앱 POST 요청 수신');
-    
-    // CORS 헤더 설정
-    const response = {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Content-Type': 'application/json'
-      }
-    };
-    
-    let formData;
-    
-    // POST 데이터 파싱
-    if (e.postData && e.postData.contents) {
-      formData = JSON.parse(e.postData.contents);
-    } else if (e.parameters) {
-      // URL 매개변수로 전달된 경우
-      formData = {};
-      Object.keys(e.parameters).forEach(key => {
-        formData[key] = e.parameters[key][0]; // 첫 번째 값 사용
-      });
-    } else {
-      throw new Error('요청 데이터가 없습니다.');
-    }
-    
-    console.log('수신된 폼 데이터:', formData);
-    
-    // 데이터 검증
-    if (!formData.name || !formData.email) {
-      throw new Error('필수 필드가 누락되었습니다.');
-    }
-    
-    // Google Sheets에 데이터 저장 및 자동화 실행
-    const result = processFormSubmission(formData);
-    
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: true,
-        message: '신청이 성공적으로 제출되었습니다.',
-        data: result
-      }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders(response.headers);
-      
-  } catch (error) {
-    console.error('doPost 오류:', error);
-    
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        error: error.toString(),
-        message: '서버 오류가 발생했습니다.'
-      }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders({
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      });
-  }
+function getSheet() {
+  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  return ss.getSheetByName('강의참석자명단') || ss.getSheets()[0];
 }
 
-/**
- * 웹 앱 GET 요청 처리 (테스트용)
- */
-function doGet(e) {
-  try {
-    // OPTIONS 요청 처리 (CORS)
-    if (e.parameter.method === 'OPTIONS') {
-      return ContentService
-        .createTextOutput('')
-        .setMimeType(ContentService.MimeType.TEXT)
-        .setHeaders({
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type'
-        });
-    }
-    
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        status: 'AI 채용 브랜딩 Google Apps Script 웹 앱이 실행 중입니다.',
-        timestamp: new Date().toISOString()
-      }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders({
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      });
-      
-  } catch (error) {
-    console.error('doGet 오류:', error);
-    
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        error: error.toString()
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+function hasGeminiQuota() {
+  return Number(CACHE.get('gHits') || 0) < 1950;
 }
 
-// ================================
-// 핵심 처리 함수
-// ================================
+function countGeminiHit() {
+  CACHE.put('gHits', String(Number(CACHE.get('gHits') || 0) + 1), 21600);
+}
 
-/**
- * 폼 제출 데이터 처리 (메인 함수)
- */
-function processFormSubmission(formData) {
-  try {
-    console.log('폼 제출 데이터 처리 시작:', formData);
-    
-    // Google Sheets 열기
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-    
-    // 타임스탬프 생성
-    const timestamp = new Date();
-    
-    // 새 행에 데이터 추가
-    const newRow = [
-      timestamp,                          // A열: 타임스탬프
-      formData.name || '',               // B열: 이름
-      formData.email || '',              // C열: 이메일
-      formData.phone || '',              // D열: 전화번호
-      formData.company || '',            // E열: 회사명
-      formData.position || '',           // F열: 직책
-      formData.concern || '',            // G열: 관심사
-      formData.industry || '',           // H열: 업종
-      formData.memo || '',               // I열: 메모
-      '',                                // J열: AI 메시지 (나중에 생성)
-      CONFIG.STATUS_VALUES.NEW,          // K열: 상태
-      false,                             // L열: 검토 완료 체크박스
-      false                              // M열: 이메일 발송 여부
-    ];
-    
-    // 시트에 데이터 추가
-    sheet.appendRow(newRow);
-    const lastRow = sheet.getLastRow();
-    
-    console.log('데이터 추가 완료, 행 번호:', lastRow);
-    
-    // 즉시 AI 메시지 생성 시도
+function withLock(cb) {
+  const lock = LockService.getScriptLock();
+  if (lock.tryLock(5000)) {
     try {
-      console.log('AI 메시지 생성 시작...');
-      generateAIMessage(lastRow, formData);
-      console.log('AI 메시지 생성 완료');
-    } catch (aiError) {
-      console.error('AI 메시지 생성 오류:', aiError);
-      // AI 생성 실패해도 데이터 저장은 성공으로 처리
-      updateStatus(lastRow, CONFIG.STATUS_VALUES.ERROR);
+      return cb();
+    } finally {
+      lock.releaseLock();
     }
-    
-    return {
-      row: lastRow,
-      timestamp: timestamp,
-      status: 'success'
-    };
-    
-  } catch (error) {
-    console.error('processFormSubmission 오류:', error);
-    throw error;
+  } else {
+    logError('Lock 획득 실패');
   }
 }
 
-/**
- * AI 메시지 생성
- */
-function generateAIMessage(rowNumber, formData) {
+function setupHeaders(sheet) {
+  const h = ['신청일시','이름','이메일','전화번호','회사명','직책',
+             '채용관련고민','업종/산업군','기타문의','처리상태',
+             'AI생성메시지','검토완료','발송상태'];
+  sheet.getRange(1,1,1,h.length).setValues([h])
+       .setFontWeight('bold')
+       .setBackground('#f0f0f0');
+}
+
+function setupCheckboxForRow(sheet, row) {
+  const cell = sheet.getRange(row, CONFIG.COLUMNS.REVIEWED);
+  cell.setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
+  if (cell.getValue() === '') cell.setValue(false);
+}
+
+function setupAllCheckboxes(sheet) {
+  const lr = Math.min(sheet.getLastRow(), 100);
+  for (let r = 2; r <= lr; r++) {
+    setupCheckboxForRow(sheet, r);
+  }
+}
+
+function getRowData(sheet, row) {
+  const v = sheet.getRange(row,1,1,13).getValues()[0];
+  return {
+    timestamp: v[0], name: v[1], email: v[2], phone: v[3],
+    company: v[4], position: v[5], concern: v[6], industry: v[7],
+    memo: v[8], status: v[9], aiMessage: v[10],
+    reviewed: v[11], sentStatus: v[12]
+  };
+}
+
+function updateStatus(sheet, row, status, color) {
+  sheet.getRange(row, CONFIG.COLUMNS.STATUS).setValue(status).setBackground(color || '#ffffff');
+}
+
+function logError(message) {
+  const sheet = getSheet();
+  const lr = sheet.getLastRow() + 1;
+  sheet.getRange(lr, CONFIG.COLUMNS.TIMESTAMP).setValue(new Date());
+  sheet.getRange(lr, CONFIG.COLUMNS.MEMO).setValue(`ERROR: ${message}`);
+}
+
+function processNewRowsBatch(sheet) {
+  const lr = sheet.getLastRow();
+  for (let r = 2; r <= lr; r++) {
+    const name = sheet.getRange(r, CONFIG.COLUMNS.NAME).getValue();
+    const aiMessage = sheet.getRange(r, CONFIG.COLUMNS.AI_MESSAGE).getValue();
+    if (
+      name &&
+      (
+        !aiMessage ||
+        aiMessage === '' ||
+        aiMessage.includes('생성') ||
+        aiMessage === '정보부족' ||
+        aiMessage.startsWith('오류') ||
+        aiMessage === 'Pending'
+      )
+    ) {
+      processNewRowOptimized(sheet, r);
+    }
+  }
+}
+
+function processNewRowOptimized(sheet, row) {
   try {
-    console.log('AI 메시지 생성 시작, 행:', rowNumber);
-    
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-    
-    // AI API 호출
-    const aiMessage = callGeminiAPI(formData);
-    
-    if (aiMessage) {
-      // AI 메시지 저장 (J열)
-      sheet.getRange(rowNumber, CONFIG.COLUMNS.AI_MESSAGE + 1).setValue(aiMessage);
-      
-      // 검토 완료 체크박스 추가 (L열)
-      const checkboxRange = sheet.getRange(rowNumber, CONFIG.COLUMNS.REVIEW_CHECKBOX + 1);
-      checkboxRange.insertCheckboxes();
-      
-      // 상태 업데이트
-      updateStatus(rowNumber, CONFIG.STATUS_VALUES.AI_GENERATED);
-      
-      console.log('AI 메시지 생성 및 저장 완료');
-      return aiMessage;
-      
+    const status = sheet.getRange(row, CONFIG.COLUMNS.STATUS).getValue();
+    if (!status) updateStatus(sheet, row, '대기', '#ffffcc');
+    sheet.getRange(row, CONFIG.COLUMNS.SENT_STATUS).setValue('메시지 생성중...');
+    setupCheckboxForRow(sheet, row);
+    Utilities.sleep(500);
+
+    const ok = generateAIMessageOptimized(sheet, row);
+    if (ok) {
+      updateStatus(sheet, row, '검토대기', '#ccffcc');
+      sheet.getRange(row, CONFIG.COLUMNS.SENT_STATUS).setValue('검토 후 발송가능');
     } else {
-      throw new Error('AI 메시지 생성 실패');
+      updateStatus(sheet, row, '메시지생성실패', '#ffcccc');
+      sheet.getRange(row, CONFIG.COLUMNS.SENT_STATUS).setValue('메시지 재생성 필요');
     }
-    
-  } catch (error) {
-    console.error('generateAIMessage 오류:', error);
-    updateStatus(rowNumber, CONFIG.STATUS_VALUES.ERROR);
-    throw error;
+  } catch (e) {
+    logError(`processNewRowOptimized Row ${row}: ${e.message}`);
   }
 }
 
-/**
- * Gemini AI API 호출
- */
-function callGeminiAPI(applicantData) {
+function generateAIMessageOptimized(sheet, row) {
+  const d = getRowData(sheet, row);
+  if (!d.name || !d.email) {
+    sheet.getRange(row, CONFIG.COLUMNS.AI_MESSAGE).setValue('정보부족');
+    return false;
+  }
+  sheet.getRange(row, CONFIG.COLUMNS.AI_MESSAGE).setValue('AI 메시지 생성 중...');
+  if (!hasGeminiQuota()) {
+    sheet.getRange(row, CONFIG.COLUMNS.AI_MESSAGE).setValue('쿼터초과');
+    return false;
+  }
+
   try {
-    const prompt = `다음 지원자에게 개인화된 환영 메시지를 작성해주세요:
-
-지원자 정보:
-- 이름: ${applicantData.name}
-- 이메일: ${applicantData.email}
-- 회사: ${applicantData.company}
-- 직책: ${applicantData.position}
-- 관심사: ${applicantData.concern}
-- 업종: ${applicantData.industry}
-- 추가 메모: ${applicantData.memo}
-
-가이드라인:
-1. 친근하고 전문적인 톤
-2. 지원자의 배경과 관심사를 반영
-3. AI 채용 브랜딩 서비스 소개
-4. 200-300자 정도
-5. 이메일 제목과 본문 포함
-
-형식:
-제목: [제목 내용]
-본문: [본문 내용]`;
-    
-    const payload = {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 1024
-      }
-    };
-    
-    const options = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      payload: JSON.stringify(payload)
-    };
-    
-    const url = `${CONFIG.GEMINI_API_URL}?key=${CONFIG.GEMINI_API_KEY}`;
-    const response = UrlFetchApp.fetch(url, options);
-    
-    if (response.getResponseCode() !== 200) {
-      throw new Error(`AI API 오류: ${response.getResponseCode()}`);
-    }
-    
-    const jsonResponse = JSON.parse(response.getContentText());
-    if (jsonResponse.candidates && jsonResponse.candidates[0] && jsonResponse.candidates[0].content) {
-      return jsonResponse.candidates[0].content.parts[0].text;
-    } else {
-      throw new Error('AI 응답 형식 오류');
-    }
-  } catch (error) {
-    console.error('Gemini API 호출 오류:', error);
-    return null;
+    const prompt = buildPrompt(d);
+    const msg = callGeminiAPIWithRetry(prompt);
+    sheet.getRange(row, CONFIG.COLUMNS.AI_MESSAGE).setValue(msg);
+    countGeminiHit();
+    return true;
+  } catch (e) {
+    sheet.getRange(row, CONFIG.COLUMNS.AI_MESSAGE).setValue('오류: ' + (e.message || '').slice(0,80));
+    logError(`AI 생성 Row ${row}: ${e.message}`);
+    return false;
   }
 }
 
-/**
- * 상태 업데이트
- */
-function updateStatus(rowNumber, status) {
+function buildPrompt(d) {
+  return `당신은 AI 채용 브랜딩 강의의 전문 강사입니다.  
+아래 신청자에게 보낼 깔끔하고 신뢰감 있는 환영 이메일 본문을 작성해주세요.
+
+**신청자 정보**
+- 이름: ${d.name}
+- 회사: ${d.company || '미제공'}
+- 직책: ${d.position || '미제공'}
+- 채용 고민: ${d.concern || '없음'}
+- 업종: ${d.industry || '미제공'}
+- 기타 문의: ${d.memo || '없음'}
+
+**신청자 정보**
+- 이름: ${d.name}
+- 회사: ${d.company || '미제공'}
+- 직책: ${d.position || '미제공'}
+- 채용 고민: ${d.concern || '없음'}
+- 업종: ${d.industry || '미제공'}
+- 기타 문의: ${d.memo || '없음'}
+
+**작성 규칙**
+1️⃣ "안녕하세요 ${d.name}${d.position || ''}님," 으로 시작  
+2️⃣ 강사 소개:
+저는 김길호 대표입니다. 현재 인테리어·건설업 기반의 중소기업을 23년 이상 경영하며,
+AI를 접목한 채용 브랜딩 전략을 설계하고 실행해 온 경험이 있습니다.  
+이러한 경험과 노하우를 나누고자 합니다.
+
+3️⃣ 강의 개설 취지:
+저 또한 유사한 고민을 경험하며 많은 시행착오를 겪어왔기에,  
+동병상련의 마음으로 대표님과 같은 경영자분들과 함께 고민하고  
+함께 해결책을 찾아보고자 이 강의를 준비하게 되었습니다.
+
+4️⃣ 신청자의 고민에 공감  
+5️⃣ AI 채용 전략, 도구 활용법, 최신 트렌드 등 강의 주요 내용 간략 언급  
+6️⃣ 강의가 상호 학습과 맞춤형 전략을 함께 찾아가는 과정임을 설명  
+7️⃣ 강의 중 자료 제공, 지속적 소통과 피드백을 위해 오픈 카톡방 참여 필요 안내  
+8️⃣ 오픈 카톡방 링크, 입장코드 제공  
+9️⃣ 카톡방 참여 시 **실명 + 직함 / 업종 / 회사명** 포함된 프로필 사용 당부  
+🔟 350~450자 이내, 따뜻하고 협력적 어투, 단락 구분  
+⓫ 이메일 본문만 작성
+
+📱 https://open.kakao.com/o/gDj947Bh  
+🔑 입장코드: leaders  
+
+이 가이드를 기반으로 이메일 본문을 작성해주세요.`;
+}
+
+function callGeminiAPIWithRetry(prompt, retry) {
+  retry = retry || 0;
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + CONFIG.GEMINI_API_KEY;
   try {
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-    sheet.getRange(rowNumber, CONFIG.COLUMNS.STATUS + 1).setValue(status);
-    console.log(`상태 업데이트: 행 ${rowNumber}, 상태 ${status}`);
-  } catch (error) {
-    console.error('updateStatus 오류:', error);
+    const res = UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      }),
+      muteHttpExceptions: true
+    });
+    if (res.getResponseCode() === 200) {
+      const j = JSON.parse(res.getContentText());
+      const t = j.candidates && j.candidates[0] && j.candidates[0].content.parts[0].text;
+      if (t) return t;
+    }
+    throw new Error('Gemini 응답 ' + res.getResponseCode());
+  } catch (e) {
+    if (retry < CONFIG.RETRY_COUNT) {
+      Utilities.sleep(1000 * (retry + 1));
+      return callGeminiAPIWithRetry(prompt, retry + 1);
+    }
+    throw e;
   }
 }
 
-// ================================
-// 트리거 및 이벤트 핸들러
-// ================================
+function sendEmailForRowOptimized(sheet, row) {
+  const d = getRowData(sheet, row);
+  if (!d.email || !d.aiMessage || d.aiMessage.includes('생성') || d.aiMessage.startsWith('오류') || d.aiMessage === '정보부족') {
+    sheet.getRange(row, CONFIG.COLUMNS.SENT_STATUS).setValue('메시지 미생성');
+    return false;
+  }
+  if (d.sentStatus === '발송완료') return true;
+  if (MailApp.getRemainingDailyQuota() <= 0) {
+    sheet.getRange(row, CONFIG.COLUMNS.SENT_STATUS).setValue('쿼터초과');
+    return false;
+  }
 
-/**
- * 셀 편집 이벤트 핸들러 (검토 완료 체크박스 감지)
- */
-function onEdit(e) {
   try {
-    const range = e.range;
-    const row = range.getRow();
-    const col = range.getColumn();
-    
-    console.log(`셀 편집 감지: 행 ${row}, 열 ${col}`);
-    
-    // 검토 완료 체크박스가 체크된 경우 (L열)
-    if (col === CONFIG.COLUMNS.REVIEW_CHECKBOX + 1 && row > 1) {
-      const isChecked = range.getValue();
-      if (isChecked === true) {
-        console.log('검토 완료 체크박스 체크됨, 행:', row);
-        sendEmailForRow(row);
-      }
-    }
-    
-  } catch (error) {
-    console.error('onEdit 오류:', error);
+    GmailApp.sendEmail(d.email, `[AI 강의] ${d.name}님, 환영합니다`, '', {
+      htmlBody: wrapHtml(d.aiMessage),
+      name: CONFIG.SENDER_NAME
+    });
+    sheet.getRange(row, CONFIG.COLUMNS.SENT_STATUS).setValue('발송완료');
+    updateStatus(sheet, row, '발송완료', '#ccccff');
+    return true;
+  } catch (e) {
+    sheet.getRange(row, CONFIG.COLUMNS.SENT_STATUS).setValue('발송실패');
+    logError(`이메일 발송 Row ${row}: ${e.message}`);
+    return false;
   }
 }
 
-/**
- * 이메일 발송
- */
-function sendEmailForRow(rowNumber) {
+function wrapHtml(text) {
+  return `<div style="font-family:sans-serif;">${text.replace(/\n/g,'<br>')}</div>`;
+}
+
+function clearAllTriggers() {
+  ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
+}
+
+function setupOptimizedTriggers() {
+  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  clearAllTriggers();
+  ScriptApp.newTrigger('onSheetChangeOptimized').forSpreadsheet(ss).onChange().create();
+  ScriptApp.newTrigger('onCellEditOptimized').forSpreadsheet(ss).onEdit().create();
   try {
-    console.log('이메일 발송 시작, 행:', rowNumber);
-    
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-    const rowData = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
-    const email = rowData[CONFIG.COLUMNS.EMAIL];
-    const name = rowData[CONFIG.COLUMNS.NAME];
-    const aiMessage = rowData[CONFIG.COLUMNS.AI_MESSAGE];
-    
-    if (!email || !aiMessage) {
-      throw new Error('이메일 주소 또는 AI 메시지가 없습니다');
-    }
-    
-    // AI 메시지에서 제목과 본문 분리
-    const messageParts = aiMessage.split('\n본문:');
-    const subject = messageParts[0].replace('제목:', '').trim();
-    const body = messageParts[1] ? messageParts[1].trim() : aiMessage;
-    
-    // 이메일 발송
-    GmailApp.sendEmail(
-      email,
-      subject || `${name}님, AI 채용 브랜딩 서비스에 관심을 가져주셔서 감사합니다`,
-      body,
-      {
-        htmlBody: body.replace(/\n/g, '<br>'),
-        name: 'AI 채용 브랜딩팀'
-      }
-    );
-    
-    // 발송 상태 업데이트
-    sheet.getRange(rowNumber, CONFIG.COLUMNS.EMAIL_SENT + 1).setValue(true);
-    updateStatus(rowNumber, CONFIG.STATUS_VALUES.EMAIL_SENT);
-    
-    console.log('이메일 발송 완료:', email);
-    
-  } catch (error) {
-    console.error('sendEmailForRow 오류:', error);
-    updateStatus(rowNumber, CONFIG.STATUS_VALUES.ERROR);
+    ScriptApp.newTrigger('onFormSubmitOptimized').forSpreadsheet(ss).onFormSubmit().create();
+  } catch (e) {
+    logError(`트리거 생성: ${e.message}`);
   }
 }
 
-// ================================
-// 수동 처리 함수 (메뉴용)
-// ================================
-
-/**
- * 누락된 행의 AI 메시지 생성
- */
-function generateMissingAIMessages() {
-  try {
-    console.log('누락된 AI 메시지 생성 시작');
-    
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-    const lastRow = sheet.getLastRow();
-    
-    if (lastRow <= 1) {
-      console.log('처리할 데이터가 없습니다');
-      return;
-    }
-    
-    let processedCount = 0;
-    
-    for (let row = 2; row <= lastRow; row++) {
-      const rowData = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
-      
-      // AI 메시지가 없고 필수 데이터가 있는 경우
-      if (!rowData[CONFIG.COLUMNS.AI_MESSAGE] && 
-          rowData[CONFIG.COLUMNS.NAME] && 
-          rowData[CONFIG.COLUMNS.EMAIL]) {
-        
-        console.log('누락된 AI 메시지 생성, 행:', row);
-        
-        const formData = {
-          name: rowData[CONFIG.COLUMNS.NAME],
-          email: rowData[CONFIG.COLUMNS.EMAIL],
-          phone: rowData[CONFIG.COLUMNS.PHONE],
-          company: rowData[CONFIG.COLUMNS.COMPANY],
-          position: rowData[CONFIG.COLUMNS.POSITION],
-          concern: rowData[CONFIG.COLUMNS.CONCERN],
-          industry: rowData[CONFIG.COLUMNS.INDUSTRY],
-          memo: rowData[CONFIG.COLUMNS.MEMO]
-        };
-        
-        generateAIMessage(row, formData);
-        processedCount++;
-        
-        // API 호출 제한을 위한 지연
-        Utilities.sleep(1000);
-      }
-    }
-    
-    console.log(`누락된 AI 메시지 생성 완료: ${processedCount}개 처리`);
-    
-  } catch (error) {
-    console.error('generateMissingAIMessages 오류:', error);
-  }
-}
-
-/**
- * 모든 검토 완료된 행에 이메일 발송
- */
-function sendAllReviewedEmails() {
-  try {
-    console.log('검토 완료된 이메일 발송 시작');
-    
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-    const lastRow = sheet.getLastRow();
-    
-    if (lastRow <= 1) {
-      console.log('처리할 데이터가 없습니다');
-      return;
-    }
-    
-    let processedCount = 0;
-    
-    for (let row = 2; row <= lastRow; row++) {
-      const rowData = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
-      
-      // 검토 완료되었지만 이메일 미발송인 경우
-      if (rowData[CONFIG.COLUMNS.REVIEW_CHECKBOX] === true && 
-          !rowData[CONFIG.COLUMNS.EMAIL_SENT]) {
-        
-        console.log('검토 완료된 이메일 발송, 행:', row);
-        sendEmailForRow(row);
-        processedCount++;
-        
-        // 이메일 발송 제한을 위한 지연
-        Utilities.sleep(2000);
-      }
-    }
-    
-    console.log(`검토 완료된 이메일 발송 완료: ${processedCount}개 처리`);
-    
-  } catch (error) {
-    console.error('sendAllReviewedEmails 오류:', error);
-  }
-}
-
-// ================================
-// 유틸리티 및 설정
-// ================================
-
-/**
- * 시트 초기화 (헤더 설정)
- */
-function initializeSheet() {
-  try {
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getActiveSheet();
-    
-    const headers = [
-      '타임스탬프',
-      '이름',
-      '이메일',
-      '전화번호',
-      '회사명',
-      '직책',
-      '관심사',
-      '업종',
-      '메모',
-      'AI 메시지',
-      '처리 상태',
-      '검토 완료',
-      '이메일 발송'
-    ];
-    
-    // 헤더 설정
-    const headerRange = sheet.getRange(1, 1, 1, headers.length);
-    headerRange.setValues([headers]);
-    headerRange.setFontWeight('bold');
-    headerRange.setBackground('#f0f0f0');
-    
-    // 컬럼 너비 조정
-    sheet.setColumnWidth(1, 150); // 타임스탬프
-    sheet.setColumnWidth(2, 100); // 이름
-    sheet.setColumnWidth(3, 200); // 이메일
-    sheet.setColumnWidth(4, 120); // 전화번호
-    sheet.setColumnWidth(5, 150); // 회사명
-    sheet.setColumnWidth(6, 100); // 직책
-    sheet.setColumnWidth(7, 150); // 관심사
-    sheet.setColumnWidth(8, 100); // 업종
-    sheet.setColumnWidth(9, 200); // 메모
-    sheet.setColumnWidth(10, 300); // AI 메시지
-    sheet.setColumnWidth(11, 100); // 처리 상태
-    sheet.setColumnWidth(12, 80);  // 검토 완료
-    sheet.setColumnWidth(13, 80);  // 이메일 발송
-    
-    console.log('시트 초기화 완료');
-    
-  } catch (error) {
-    console.error('initializeSheet 오류:', error);
-  }
-}
-
-/**
- * 사용자 정의 메뉴 생성
- */
 function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-  
-  ui.createMenu('🤖 AI 자동화')
-    .addItem('📝 누락 행 AI 메시지 생성', 'generateMissingAIMessages')
-    .addItem('📧 검토 완료된 이메일 발송', 'sendAllReviewedEmails')
-    .addSeparator()
-    .addItem('🔄 시트 초기화', 'initializeSheet')
-    .addItem('🧪 테스트 실행', 'testFunction')
+  SpreadsheetApp.getUi()
+    .createMenu('✉️ AI 메일 도구')
+    .addItem('시스템 초기화', 'initializeSystem')
+    .addItem('체크박스 세팅', 'safeSetupAllCheckboxes')
+    .addItem('새 행 처리', 'safeProcessNewRows')
+    .addItem('테스트 데이터 생성', 'generateTestData')
+    .addItem('트리거 재설정', 'setupOptimizedTriggers')
     .addToUi();
 }
 
-/**
- * 테스트 함수
- */
-function testFunction() {
-  console.log('테스트 함수 실행');
-  
-  const testData = {
-    name: '테스트 사용자',
-    email: 'test@example.com',
-    phone: '010-1234-5678',
-    company: '테스트 회사',
-    position: '개발자',
-    concern: 'AI 채용',
-    industry: 'IT',
-    memo: '테스트 메모'
-  };
-  
-  try {
-    const result = processFormSubmission(testData);
-    console.log('테스트 결과:', result);
-    console.log('테스트 완료');
-  } catch (error) {
-    console.error('테스트 오류:', error);
+function initializeSystem() {
+  const sheet = getSheet();
+  setupHeaders(sheet);
+  setupAllCheckboxes(sheet);
+  setupOptimizedTriggers();
+  SpreadsheetApp.getUi().alert('초기화 완료');
+}
+
+function safeProcessNewRows() {
+  withLock(() => processNewRowsBatch(getSheet()));
+}
+
+function safeSetupAllCheckboxes() {
+  setupAllCheckboxes(getSheet());
+}
+
+function generateTestData() {
+  const sheet = getSheet();
+  sheet.appendRow([new Date(), '홍길동', 'test@example.com', '010-1234-5678', '테스트회사', '대표',
+                   '우수 인재 확보', 'IT', '없음', '', '', '', '']);
+}
+
+function onSheetChangeOptimized(e) {
+  safeProcessNewRows();
+}
+
+function onFormSubmitOptimized(e) {
+  safeProcessNewRows();
+}
+
+function onCellEditOptimized(e) {
+  const sheet = getSheet();
+  const row = e.range.getRow();
+  const col = e.range.getColumn();
+  if (row > 1 && col === CONFIG.COLUMNS.REVIEWED && (e.value === 'TRUE' || e.value === true)) {
+    withLock(() => {
+      sheet.getRange(row, CONFIG.COLUMNS.SENT_STATUS).setValue('발송중...');
+      Utilities.sleep(100);
+      sendEmailForRowOptimized(sheet, row);
+    });
   }
 } 
