@@ -28,40 +28,62 @@ export async function POST(request: NextRequest) {
 
     console.log('신청 데이터 수신:', applicationData)
 
-    // Service Account JSON 파일 읽기
-    const serviceAccountPath = path.join(process.cwd(), 'service-account-key.json')
-    
-    if (!fs.existsSync(serviceAccountPath)) {
-      console.log('Service Account 파일이 없습니다:', serviceAccountPath)
-      return NextResponse.json(
-        { error: 'Service Account 설정이 필요합니다.' },
-        { status: 500 }
-      )
-    }
-
-    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'))
+    // 환경변수 확인
+    const serviceAccountEmail = process.env.GOOGLE_CLIENT_EMAIL
+    const privateKey = process.env.GOOGLE_PRIVATE_KEY
     const sheetId = process.env.GOOGLE_SHEETS_SHEET_ID
 
+    let auth
+
+    // 1. 환경변수 방식 우선 시도 (Netlify 배포용)
+    if (serviceAccountEmail && privateKey && sheetId) {
+      console.log('환경변수 방식으로 인증 시작...')
+      
+      // Private Key 처리 (개행 문자 복원)
+      const formattedPrivateKey = privateKey.replace(/\\n/g, '\n')
+      
+      auth = new google.auth.GoogleAuth({
+        credentials: {
+          client_email: serviceAccountEmail,
+          private_key: formattedPrivateKey,
+        },
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+      })
+    } 
+    // 2. Service Account 파일 방식 (로컬 개발용)
+    else {
+      const serviceAccountPath = path.join(process.cwd(), 'service-account-key.json')
+      
+      if (!fs.existsSync(serviceAccountPath)) {
+        console.log('Service Account 파일 및 환경변수 모두 없음')
+        return NextResponse.json(
+          { error: 'Service Account 설정이 필요합니다.' },
+          { status: 500 }
+        )
+      }
+
+      console.log('Service Account 파일 방식으로 인증 시작...')
+      const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'))
+      
+      auth = new google.auth.GoogleAuth({
+        credentials: serviceAccount,
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+      })
+    }
+
     if (!sheetId) {
-      console.log('환경변수 누락: GOOGLE_SHEETS_SHEET_ID')
+      console.log('GOOGLE_SHEETS_SHEET_ID 환경변수가 필요합니다.')
       return NextResponse.json(
         { error: '환경변수 설정이 필요합니다.' },
         { status: 500 }
       )
     }
 
-    console.log('Service Account 파일 읽기 완료')
-    console.log('Google Sheets API 인증 시작...')
-
-    // Google Sheets API 클라이언트 생성
-    const auth = new google.auth.GoogleAuth({
-      credentials: serviceAccount,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    })
+    console.log('Google Sheets API 인증 완료')
+    console.log('Google Sheets API 클라이언트 생성...')
 
     const sheets = google.sheets({ version: 'v4', auth })
 
-    console.log('Google Sheets API 클라이언트 생성 완료')
     console.log('Google Sheets에 데이터 추가 시도...')
     console.log('Sheet ID:', sheetId)
 
@@ -132,17 +154,23 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
+    // 환경변수 확인
+    const envStatus = {
+      GOOGLE_CLIENT_EMAIL: !!process.env.GOOGLE_CLIENT_EMAIL,
+      GOOGLE_PRIVATE_KEY: !!process.env.GOOGLE_PRIVATE_KEY,
+      GOOGLE_SHEETS_SHEET_ID: !!process.env.GOOGLE_SHEETS_SHEET_ID
+    }
+
     // Service Account 파일 존재 여부 확인
     const serviceAccountPath = path.join(process.cwd(), 'service-account-key.json')
     const fileExists = fs.existsSync(serviceAccountPath)
-    
-    const sheetId = process.env.GOOGLE_SHEETS_SHEET_ID
 
     return NextResponse.json({
       message: 'Google Sheets API 연결 테스트',
       status: 'OK',
+      environment: envStatus,
       serviceAccountFile: fileExists,
-      sheetId: !!sheetId,
+      authMethod: envStatus.GOOGLE_CLIENT_EMAIL ? 'environment' : (fileExists ? 'file' : 'none'),
       timestamp: new Date().toISOString()
     })
   } catch (error: any) {
