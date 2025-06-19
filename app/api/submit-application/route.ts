@@ -39,8 +39,23 @@ export async function POST(request: NextRequest) {
     if (serviceAccountEmail && privateKey && sheetId) {
       console.log('환경변수 방식으로 인증 시작...')
       
-      // Private Key 처리 (개행 문자 복원)
-      const formattedPrivateKey = privateKey.replace(/\\n/g, '\n')
+      // Private Key 처리 (한 줄로 입력된 키의 개행 문자 복원)
+      let formattedPrivateKey = privateKey
+      
+      // 이미 줄바꿈이 있는 경우와 \n으로 표시된 경우 모두 처리
+      if (!formattedPrivateKey.includes('\n') && formattedPrivateKey.includes('\\n')) {
+        formattedPrivateKey = formattedPrivateKey.replace(/\\n/g, '\n')
+      }
+      
+      // BEGIN과 END가 제대로 줄바꿈되었는지 확인
+      if (!formattedPrivateKey.startsWith('-----BEGIN PRIVATE KEY-----\n')) {
+        formattedPrivateKey = formattedPrivateKey.replace('-----BEGIN PRIVATE KEY-----', '-----BEGIN PRIVATE KEY-----\n')
+      }
+      if (!formattedPrivateKey.endsWith('\n-----END PRIVATE KEY-----')) {
+        formattedPrivateKey = formattedPrivateKey.replace('-----END PRIVATE KEY-----', '\n-----END PRIVATE KEY-----')
+      }
+      
+      console.log('Private Key 포맷 처리 완료')
       
       auth = new google.auth.GoogleAuth({
         credentials: {
