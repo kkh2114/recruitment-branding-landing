@@ -5,5 +5,9 @@
 [build.environment]
   NODE_VERSION = "18.18.2"
 
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["googleapis"]
+
 [[plugins]]
   package = "@netlify/plugin-nextjs" 
