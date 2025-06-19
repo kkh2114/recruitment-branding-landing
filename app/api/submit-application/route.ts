@@ -3,7 +3,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { google } from 'googleapis'
 import { z } from 'zod'
 
 // 신청 데이터 스키마
@@ -24,93 +23,64 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const applicationData = applicationSchema.parse(body)
 
-    // 환경변수에서 Service Account 정보 가져오기 (Netlify 최적화)
-    const privateKey = process.env.GOOGLE_PRIVATE_KEY
-    if (!privateKey) {
-      console.error('GOOGLE_PRIVATE_KEY 환경변수가 설정되지 않았습니다.')
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: '서버 설정 오류입니다. 관리자에게 문의하세요.' 
-        },
-        { status: 500 }
-      )
+    // 환경변수 검증
+    const requiredEnvVars = {
+      GOOGLE_PRIVATE_KEY: process.env.GOOGLE_PRIVATE_KEY,
+      GOOGLE_CLIENT_EMAIL: process.env.GOOGLE_CLIENT_EMAIL,
+      GOOGLE_SHEETS_SHEET_ID: process.env.GOOGLE_SHEETS_SHEET_ID || '1M0ZzjdY7kvYXZfWhyyOANTHsa6HIBcvJ2g71CgjIkDk'
     }
 
-    // Netlify 환경에서 줄바꿈 문자 처리
-    const processedPrivateKey = privateKey
-      .replace(/\\n/g, '\n')
-      .replace(/\r\n/g, '\n')
-      .replace(/\r/g, '\n')
-
-    const credentials = {
-      type: "service_account",
-      project_id: process.env.GOOGLE_PROJECT_ID || "recruitment-branding",
-      private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
-      private_key: processedPrivateKey,
-      client_email: process.env.GOOGLE_CLIENT_EMAIL,
-      client_id: process.env.GOOGLE_CLIENT_ID,
-      auth_uri: "https://accounts.google.com/o/oauth2/auth",
-      token_uri: "https://oauth2.googleapis.com/token",
-      auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-      client_x509_cert_url: process.env.GOOGLE_CLIENT_X509_CERT_URL,
-      universe_domain: "googleapis.com"
+    for (const [key, value] of Object.entries(requiredEnvVars)) {
+      if (!value) {
+        console.error(`필수 환경변수 ${key}가 설정되지 않았습니다.`)
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: '서버 설정 오류입니다. 관리자에게 문의하세요.',
+            missingVar: key
+          },
+          { status: 500 }
+        )
+      }
     }
 
-    // 필수 환경변수 체크
-    if (!credentials.private_key || !credentials.client_email) {
-      console.error('필수 환경변수가 설정되지 않았습니다:', {
-        hasPrivateKey: !!credentials.private_key,
-        hasClientEmail: !!credentials.client_email
-      })
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: '서버 설정 오류입니다. 관리자에게 문의하세요.' 
-        },
-        { status: 500 }
-      )
-    }
-
-    console.log('인증 정보 확인:', {
-      type: credentials.type,
-      project_id: credentials.project_id,
-      client_email: credentials.client_email,
-      hasPrivateKey: !!credentials.private_key,
-      privateKeyLength: credentials.private_key?.length,
-      environment: process.env.NODE_ENV || 'development'
+    console.log('환경변수 확인 완료:', {
+      hasPrivateKey: !!requiredEnvVars.GOOGLE_PRIVATE_KEY,
+      hasClientEmail: !!requiredEnvVars.GOOGLE_CLIENT_EMAIL,
+      hasSheetId: !!requiredEnvVars.GOOGLE_SHEETS_SHEET_ID,
+      environment: process.env.NODE_ENV || 'development',
+      runtime: process.env.AWS_LAMBDA_JS_RUNTIME || 'not-set'
     })
 
-    // Google Sheets 인증 설정 (Netlify Functions 최적화)
-    let auth, sheets
-    try {
-      // JWT 방식으로 직접 인증 (Netlify Functions에서 더 안정적)
-      const jwtClient = new google.auth.JWT(
-        credentials.client_email,
-        undefined,
-        credentials.private_key,
-        ['https://www.googleapis.com/auth/spreadsheets'],
-        undefined
-      )
+    // Google Sheets API v4 직접 호출 방식
+    const { GoogleSpreadsheet } = require('google-spreadsheet')
+    
+    const doc = new GoogleSpreadsheet(requiredEnvVars.GOOGLE_SHEETS_SHEET_ID!)
 
-      // 명시적으로 인증 실행
-      await jwtClient.authorize()
-      console.log('JWT 인증 성공')
+    // 서비스 계정 인증 (더 간단한 방식)
+    await doc.useServiceAccountAuth({
+      client_email: requiredEnvVars.GOOGLE_CLIENT_EMAIL!,
+      private_key: requiredEnvVars.GOOGLE_PRIVATE_KEY!.replace(/\\n/g, '\n')
+    })
 
-      sheets = google.sheets({ 
-        version: 'v4', 
-        auth: jwtClient 
-      })
-    } catch (authError) {
-      console.error('Google 인증 실패:', authError)
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: '구글 인증에 실패했습니다. 관리자에게 문의하세요.' 
-        },
-        { status: 500 }
-      )
+    // 문서 정보 로드
+    await doc.loadInfo()
+    console.log('구글 시트 연결 성공:', {
+      title: doc.title,
+      sheetCount: doc.sheetCount
+    })
+
+    // 첫 번째 시트 가져오기
+    const sheet = doc.sheetsByIndex[0]
+    if (!sheet) {
+      throw new Error('시트를 찾을 수 없습니다.')
     }
+
+    console.log('시트 정보:', {
+      title: sheet.title,
+      rowCount: sheet.rowCount,
+      columnCount: sheet.columnCount
+    })
 
     // 현재 시간
     const timestamp = new Date().toLocaleString('ko-KR', {
@@ -123,71 +93,34 @@ export async function POST(request: NextRequest) {
       second: '2-digit',
     })
 
-    // 구글 시트에 추가할 데이터 준비
-    const values = [
-      [
-        timestamp,                              // 신청일시
-        applicationData.name,                   // 이름
-        applicationData.email,                  // 이메일
-        applicationData.phone,                  // 전화번호
-        applicationData.company,                // 회사명
-        applicationData.position,               // 직책
-        applicationData.concern || '',          // 채용 관련 고민
-        applicationData.industry || '',         // 업종/산업군
-        applicationData.memo || '',             // 기타 문의사항
-        '대기',                                 // 처리 상태
-        '',                                     // AI생성메시지 (Apps Script에서 처리)
-        'FALSE',                                // 검토완료 (체크박스)
-        '대기',                                 // 발송상태
-      ],
-    ]
-
-    console.log('시트에 추가할 데이터:', values)
-
-    // 구글 시트 ID
-    const sheetId = process.env.GOOGLE_SHEETS_SHEET_ID || '1M0ZzjdY7kvYXZfWhyyOANTHsa6HIBcvJ2g71CgjIkDk'
-    console.log('사용할 시트 ID:', sheetId)
-
-    // 먼저 시트 정보 확인
-    try {
-      const sheetInfo = await sheets.spreadsheets.get({
-        spreadsheetId: sheetId,
-      })
-      console.log('시트 정보:', {
-        title: sheetInfo.data.properties?.title,
-        sheets: sheetInfo.data.sheets?.map(sheet => ({
-          title: sheet.properties?.title,
-          sheetId: sheet.properties?.sheetId
-        }))
-      })
-    } catch (infoError) {
-      console.log('시트 정보 조회 실패:', infoError)
-    }
-
-    // 구글 시트에 데이터 추가
-    const result = await sheets.spreadsheets.values.append({
-      spreadsheetId: sheetId,
-      range: '강의참석자명단!A:M', // 올바른 시트 이름으로 범위 지정
-      valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
-      requestBody: {
-        values,
-      },
+    // 새 행 추가 (google-spreadsheet 방식)
+    const newRow = await sheet.addRow({
+      '신청일시': timestamp,
+      '이름': applicationData.name,
+      '이메일': applicationData.email,
+      '전화번호': applicationData.phone,
+      '회사명': applicationData.company,
+      '직책': applicationData.position,
+      '채용 관련 고민': applicationData.concern || '',
+      '업종/산업군': applicationData.industry || '',
+      '기타 문의사항': applicationData.memo || '',
+      '처리 상태': '대기',
+      'AI생성메시지': '',
+      '검토완료': 'FALSE',
+      '발송상태': '대기'
     })
 
-    console.log('구글 시트 추가 결과:', {
-      status: result.status,
-      statusText: result.statusText,
-      updatedRows: result.data.updates?.updatedRows,
-      updatedRange: result.data.updates?.updatedRange,
-      updatedCells: result.data.updates?.updatedCells
+    console.log('데이터 추가 성공:', {
+      rowNumber: newRow._rowNumber,
+      timestamp
     })
 
     return NextResponse.json(
       { 
         success: true, 
         message: '신청이 성공적으로 완료되었습니다.',
-        timestamp 
+        timestamp,
+        rowNumber: newRow._rowNumber
       },
       { status: 200 }
     )
@@ -232,7 +165,8 @@ export async function POST(request: NextRequest) {
       { 
         success: false, 
         message: '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        errorDetails: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     )
@@ -249,14 +183,16 @@ export async function GET() {
       hasGoogleClientEmail: !!process.env.GOOGLE_CLIENT_EMAIL,
       hasGoogleSheetsId: !!process.env.GOOGLE_SHEETS_SHEET_ID,
       nodeEnv: process.env.NODE_ENV,
-      runtime: 'netlify-functions'
+      runtime: 'netlify-functions',
+      lambdaRuntime: process.env.AWS_LAMBDA_JS_RUNTIME || 'not-set',
+      nodeVersion: process.env.NODE_VERSION || 'not-set'
     }
 
     return NextResponse.json(
       { 
         message: 'AI 채용 브랜딩 강의 신청 API',
         methods: ['POST'],
-        version: '3.0.0',
+        version: '4.0.0',
         status: 'running',
         environment: envCheck,
         timestamp: new Date().toISOString()
