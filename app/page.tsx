@@ -435,8 +435,12 @@ export default function LandingPage() {
               <div className="text-center animate-fade-in-right">
                 <div className="relative">
                   <div className="w-64 h-64 mx-auto bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 rounded-full p-1 animate-gradient-x hover:scale-110 transition-all duration-300">
-                    <div className="w-full h-full bg-white rounded-full flex items-center justify-center text-6xl animate-bounce">
-                      👨‍💼
+                    <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden">
+                      <img 
+                        src="/ghibli-character.png" 
+                        alt="김길호 대표 지브리 스타일 캐릭터" 
+                        className="w-full h-full object-cover rounded-full animate-bounce"
+                      />
                     </div>
                   </div>
                   <div className="absolute -top-4 -right-4 text-3xl animate-spin-slow">✨</div>
